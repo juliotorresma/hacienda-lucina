@@ -9,6 +9,7 @@
   min-height: 100vh;
   background: var(--ivory);
   padding-top: 64px;
+  overflow-x: hidden;
 }
 
 /* Header */
@@ -134,7 +135,7 @@
 .admin-main select,
 .admin-main textarea {
   font-family: 'Jost', sans-serif;
-  font-size: 15px;
+  font-size: 16px; /* >=16px evita el zoom automatico en iOS al enfocar */
   font-weight: 300;
   color: var(--ink);
   background: #fffdf6;
@@ -142,6 +143,8 @@
   border-radius: 3px;
   padding: 12px 14px;
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
   transition: border-color 0.2s;
 }
 .admin-main input:focus,
@@ -233,6 +236,7 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
+  min-width: 0;
 }
 .checkbox-row {
   display: flex;
@@ -268,6 +272,9 @@
   border-radius: 3px;
   background: #fffdf6;
 }
+.event-info {
+  min-width: 0;
+}
 .event-top {
   display: flex;
   align-items: baseline;
@@ -298,6 +305,7 @@
   margin-top: 8px;
   font-size: 13px;
   color: var(--ink);
+  overflow-wrap: anywhere;
 }
 .event-del {
   flex-shrink: 0;
@@ -323,6 +331,19 @@
 @media (max-width: 860px) {
   .admin-grid { grid-template-columns: 1fr; }
   .admin-header { padding: 12px 18px; }
-  .admin-main { padding: 32px 16px 60px; }
-  .admin-card { padding: 24px; }
+  .admin-main { padding: 28px 14px 60px; }
+  .admin-card { padding: 22px; }
+}
+
+@media (max-width: 520px) {
+  .admin-header { padding: 10px 14px; gap: 10px; }
+  .admin-brand { gap: 8px; }
+  .admin-brand-name { font-size: 17px; }
+  .admin-user { display: none; } /* se oculta para dar espacio al boton salir */
+  .admin-logout { padding: 7px 12px; letter-spacing: 0.14em; }
+  .admin-main { padding: 24px 12px 56px; }
+  .admin-card { padding: 18px; }
+  .auth-title { font-size: 27px; }
+  /* Apilar pares para evitar campos demasiado angostos */
+  .form-row { grid-template-columns: 1fr; }
 }

@@ -1124,6 +1124,10 @@ textarea:focus-visible {
   .hour-label { font-size: 11px; letter-spacing: 0.18em; }
   .hour-status { font-size: 10px; letter-spacing: 0.2em; }
   .contact-row { grid-template-columns: 1fr; gap: 16px; }
+  /* >=16px evita el zoom automatico de iOS al enfocar campos */
+  .contact-form input,
+  .contact-form select,
+  .contact-form textarea { font-size: 16px; }
   footer { padding: 48px 20px; }
   .footer-links { gap: 22px; }
 }
