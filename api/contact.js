@@ -2,25 +2,28 @@
 // /api/contact  (Vercel Serverless Function)
 // ============================================================
 // Recibe el formulario de contacto del sitio publico y envia una
-// notificacion por WhatsApp al dueno (Julio) con los datos ordenados,
-// incluyendo el telefono de quien lo mando.
+// notificacion por WhatsApp a TODOS los telefonos admin (tabla profiles)
+// y tambien a la persona que lleno la solicitud, con los datos ordenados.
 //
 // Como el mensaje lo inicia el negocio, se usa una plantilla de Meta
 // (categoria Utility) con 6 parametros de cuerpo:
 //   {{1}} nombre  {{2}} telefono  {{3}} correo
 //   {{4}} tipo de evento  {{5}} fecha tentativa  {{6}} mensaje
 //
-// El mismo mensaje se envia al dueno y a la persona que lleno el
-// formulario (como confirmacion). El envio al dueno es obligatorio; el
-// del solicitante es best-effort (no rompe la respuesta si falla).
+// Todos los envios son best-effort; basta con que uno llegue para
+// responder ok. Si ninguno llega, se devuelve error.
 //
 // Variables de entorno requeridas:
+//   SUPABASE_URL
+//   SUPABASE_SERVICE_ROLE_KEY
 //   META_WHATSAPP_TOKEN
 //   META_PHONE_NUMBER_ID
 //   META_CONTACT_TEMPLATE   (nombre de la plantilla, p.ej. hacienda_contacto)
 //   META_TEMPLATE_LANG      (opcional, default "es_MX")
-//   OWNER_WHATSAPP_PHONE    (opcional, default +528712832271)
+//   OWNER_WHATSAPP_PHONE    (opcional, fallback si no hay profiles)
 // ============================================================
+
+import { createClient } from '@supabase/supabase-js';
 
 export const config = { api: { bodyParser: false } };
 
@@ -114,26 +117,46 @@ export default async function handler(req, res) {
     if (!r.ok) throw new Error(await r.text());
   }
 
-  const owner = process.env.OWNER_WHATSAPP_PHONE || '+528712832271';
-
-  // 1. Notificacion al dueno (obligatoria).
+  // Cargar todos los telefonos admin desde profiles (service role).
+  let adminPhones = [];
   try {
-    await sendTemplate(owner);
+    const admin = createClient(
+      process.env.SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_ROLE_KEY,
+      { auth: { autoRefreshToken: false, persistSession: false } }
+    );
+    const { data } = await admin.from('profiles').select('phone');
+    adminPhones = (data || []).map((p) => p.phone).filter(Boolean);
   } catch (e) {
-    return res.status(502).json({ error: `WhatsApp (dueño): ${e.message}` });
+    console.error('No se pudieron cargar los profiles:', e.message);
+  }
+  // Fallback por si la tabla esta vacia o falla la consulta.
+  if (adminPhones.length === 0 && process.env.OWNER_WHATSAPP_PHONE) {
+    adminPhones = [process.env.OWNER_WHATSAPP_PHONE];
   }
 
-  // 2. Confirmacion a la persona que lleno el formulario (best-effort).
-  let confirmationSent = false;
+  // Destinatarios = admins + solicitante, normalizados y sin duplicados.
   const requesterPhone = normalizePhone(body.phone);
-  if (requesterPhone && requesterPhone.replace('+', '') !== owner.replace('+', '')) {
-    try {
-      await sendTemplate(requesterPhone);
-      confirmationSent = true;
-    } catch (e) {
-      console.error('No se pudo enviar confirmacion al solicitante:', e.message);
-    }
+  const recipients = [...new Set(
+    [...adminPhones, requesterPhone]
+      .map((p) => normalizePhone(p))
+      .filter(Boolean)
+      .map((p) => p.replace('+', ''))
+  )];
+
+  const results = await Promise.allSettled(recipients.map((to) => sendTemplate(to)));
+  const sent = results.filter((r) => r.status === 'fulfilled').length;
+  const failed = results.length - sent;
+  if (failed) {
+    console.error(
+      'Envios fallidos:',
+      results.filter((r) => r.status === 'rejected').map((r) => r.reason?.message)
+    );
   }
 
-  return res.status(200).json({ ok: true, confirmation_sent: confirmationSent });
+  if (sent === 0) {
+    return res.status(502).json({ error: 'No se pudo enviar ninguna notificación' });
+  }
+
+  return res.status(200).json({ ok: true, sent, failed });
 }

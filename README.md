@@ -18,7 +18,7 @@ lgl_hacienda_v1/
 ├── api/
 │   ├── auth-request.js   Genera OTP y lo envía por WhatsApp (allowlist)
 │   ├── auth-verify.js    Verifica OTP y emite el JWT de sesión (HS256)
-│   ├── contact.js        Formulario público → WhatsApp al dueño
+│   ├── contact.js        Formulario público → WhatsApp a admins + cliente
 │   └── notify-event.js   DB Webhook on INSERT → notifica eventos por WhatsApp
 ├── scripts/
 │   └── seed-user.mjs     Pre-crea usuarios admin (auth + profile + allowlist)
