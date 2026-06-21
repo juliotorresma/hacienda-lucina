@@ -1,5 +1,10 @@
 /* ── Panel Admin · Hacienda Lucina ── */
 
+/* El atributo hidden debe ganar siempre, aun sobre display:flex/grid. */
+[hidden] {
+  display: none !important;
+}
+
 .admin-body {
   min-height: 100vh;
   background: var(--ivory);
@@ -197,6 +202,16 @@
 }
 
 /* Dashboard grid */
+.admin-dash {
+  animation: dashFadeIn 0.35s ease both;
+}
+.admin-auth {
+  animation: dashFadeIn 0.3s ease both;
+}
+@keyframes dashFadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
 .admin-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;

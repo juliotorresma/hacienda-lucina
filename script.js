@@ -54,8 +54,10 @@ const WEEKDAYS_ES = [
 const YEAR_MIN = 2026;
 const YEAR_MAX = 2028;
 
-let curYear = 2026;
-let curMonth = 4; // mayo
+// Arranca en el mes actual (acotado al rango disponible).
+const _now = new Date();
+let curYear = Math.min(Math.max(_now.getFullYear(), YEAR_MIN), YEAR_MAX);
+let curMonth = _now.getFullYear() < YEAR_MIN ? 0 : _now.getMonth();
 
 function dk(y, m, d) {
   return y + '-' + String(m + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
