@@ -1040,11 +1040,111 @@ footer {
   opacity: 0.78;
 }
 .footer-links a:hover { color: var(--terra-soft); opacity: 1; }
+.footer-legal {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+.footer-legal a {
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--cream);
+  text-decoration: none;
+  opacity: 0.62;
+  transition: color 0.2s, opacity 0.2s;
+}
+.footer-legal a:hover { color: var(--terra-soft); opacity: 1; }
+.footer-legal-sep { color: var(--cream); opacity: 0.4; }
 .footer-copy {
   font-size: 10px;
   letter-spacing: 0.22em;
   color: var(--cream);
   opacity: 0.55;
+}
+
+/* ── PÁGINAS LEGALES ── */
+.legal-nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 48px;
+  background: var(--sage-nav);
+  border-bottom: 0.5px solid rgba(43, 52, 22, 0.18);
+}
+.legal-nav .nav-logo { color: #fbf6e9; }
+.legal-back {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #fbf6e9;
+  text-decoration: none;
+  opacity: 0.9;
+  transition: opacity 0.2s, color 0.2s;
+}
+.legal-back:hover { color: #f0c896; opacity: 1; }
+.legal {
+  max-width: 820px;
+  margin: 0 auto;
+  padding: 72px 24px 96px;
+}
+.legal-header {
+  text-align: center;
+  margin-bottom: 48px;
+}
+.legal-header .sec-rule { margin-left: auto; margin-right: auto; }
+.legal-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(30px, 6vw, 46px);
+  font-weight: 400;
+  color: var(--olive);
+  margin: 6px 0 4px;
+}
+.legal-updated {
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  color: var(--olive-md);
+  text-transform: uppercase;
+}
+.legal h2 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 24px;
+  font-weight: 500;
+  color: var(--olive);
+  margin: 36px 0 12px;
+}
+.legal p,
+.legal li {
+  font-size: 15.5px;
+  line-height: 1.75;
+  color: var(--ink);
+}
+.legal p { margin-bottom: 14px; }
+.legal ul {
+  margin: 0 0 14px 1.1em;
+  padding: 0;
+}
+.legal li { margin-bottom: 8px; }
+.legal a { color: var(--gold); }
+.legal-intro {
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  font-size: 19px;
+  color: var(--olive-md);
+  line-height: 1.7;
+  margin-bottom: 8px;
+}
+
+@media (max-width: 720px) {
+  .legal-nav { padding: 12px 18px; }
+  .legal { padding: 48px 18px 72px; }
 }
 
 /* ── FOCUS RINGS ── */
