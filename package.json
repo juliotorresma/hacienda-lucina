@@ -1,0 +1,13 @@
+{
+  "name": "lgl-hacienda-v1",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Sitio de Hacienda Lucina con panel admin (Supabase + WhatsApp).",
+  "type": "module",
+  "scripts": {
+    "seed": "node --env-file=.env scripts/seed-user.mjs"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0"
+  }
+}

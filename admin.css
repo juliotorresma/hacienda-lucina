@@ -1,0 +1,313 @@
+/* ── Panel Admin · Hacienda Lucina ── */
+
+.admin-body {
+  min-height: 100vh;
+  background: var(--ivory);
+  padding-top: 64px;
+}
+
+/* Header */
+.admin-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 32px;
+  background: var(--sage-nav);
+  border-bottom: 0.5px solid rgba(43, 52, 22, 0.18);
+}
+.admin-brand {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 12px;
+  text-decoration: none;
+}
+.admin-brand-kicker {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.3em;
+  color: #e6c79a;
+}
+.admin-brand-name {
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  font-size: 19px;
+  color: #fbf6e9;
+}
+.admin-header-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.admin-user {
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  color: #fbf6e9;
+}
+.admin-logout {
+  font-family: 'Jost', sans-serif;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  border: 1px solid #fbf6e9;
+  background: transparent;
+  color: #fbf6e9;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.admin-logout:hover {
+  background: #fbf6e9;
+  color: var(--forest-dk);
+}
+
+/* Main / cards */
+.admin-main {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 48px 24px 80px;
+}
+.admin-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 32px;
+  box-shadow: 0 8px 30px rgba(43, 52, 22, 0.06);
+}
+.card-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 26px;
+  font-weight: 400;
+  color: var(--olive);
+}
+
+/* Auth */
+.admin-auth {
+  display: flex;
+  justify-content: center;
+  padding-top: 32px;
+}
+.auth-card {
+  width: 100%;
+  max-width: 420px;
+  text-align: center;
+}
+.auth-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 32px;
+  font-weight: 400;
+  color: var(--olive);
+  margin: 6px 0;
+}
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: left;
+  margin-top: 24px;
+}
+.auth-hint {
+  font-size: 12px;
+  color: var(--olive-md);
+  margin: 2px 0 10px;
+}
+
+/* Fields (reuse site look) */
+.field-label {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--olive-md);
+}
+.admin-main input,
+.admin-main select,
+.admin-main textarea {
+  font-family: 'Jost', sans-serif;
+  font-size: 15px;
+  font-weight: 300;
+  color: var(--ink);
+  background: #fffdf6;
+  border: 1px solid var(--border2);
+  border-radius: 3px;
+  padding: 12px 14px;
+  width: 100%;
+  transition: border-color 0.2s;
+}
+.admin-main input:focus,
+.admin-main select:focus,
+.admin-main textarea:focus {
+  outline: none;
+  border-color: var(--sage-dk);
+}
+.admin-main textarea {
+  min-height: 80px;
+  resize: vertical;
+}
+
+/* Buttons */
+.admin-btn {
+  font-family: 'Jost', sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  background: var(--forest);
+  color: #fbf6e9;
+  border: none;
+  border-radius: 3px;
+  padding: 14px 22px;
+  margin-top: 10px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.admin-btn:hover { background: var(--forest-dk); }
+.admin-btn:disabled { opacity: 0.6; cursor: default; }
+
+.admin-link {
+  background: none;
+  border: none;
+  color: var(--sage-dk);
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  margin-top: 4px;
+  text-decoration: underline;
+}
+
+/* Messages */
+.auth-msg {
+  margin-top: 14px;
+  font-size: 13px;
+  padding: 10px 12px;
+  border-radius: 3px;
+}
+.auth-msg.error {
+  background: rgba(179, 89, 46, 0.12);
+  color: var(--terra-dk);
+}
+.auth-msg.success {
+  background: rgba(107, 117, 72, 0.16);
+  color: var(--sage-dk);
+}
+
+/* Dashboard grid */
+.admin-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  align-items: start;
+}
+.event-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 18px;
+}
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  color: var(--ink);
+  cursor: pointer;
+}
+.checkbox-row input {
+  width: auto;
+}
+
+/* Events list */
+.events-list {
+  margin-top: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.events-empty {
+  font-size: 14px;
+  color: var(--olive-md);
+  font-style: italic;
+}
+.event-item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  background: #fffdf6;
+}
+.event-top {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.event-type {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 19px;
+  color: var(--olive);
+}
+.event-date {
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  color: var(--sage-dk);
+}
+.event-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 6px;
+  font-size: 12.5px;
+  color: var(--olive-md);
+}
+.event-meta i { color: var(--sage-dk); }
+.event-author { font-style: italic; }
+.event-notes {
+  margin-top: 8px;
+  font-size: 13px;
+  color: var(--ink);
+}
+.event-del {
+  flex-shrink: 0;
+  background: none;
+  border: 1px solid var(--border2);
+  border-radius: 3px;
+  color: var(--terra);
+  width: 36px;
+  height: 36px;
+  font-size: 18px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+.event-del:hover {
+  background: var(--terra);
+  color: #fff;
+  border-color: var(--terra);
+}
+
+@media (max-width: 860px) {
+  .admin-grid { grid-template-columns: 1fr; }
+  .admin-header { padding: 12px 18px; }
+  .admin-main { padding: 32px 16px 60px; }
+  .admin-card { padding: 24px; }
+}

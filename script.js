@@ -7,31 +7,39 @@ const DAY_SPAN = DAY_END - DAY_START; // 20 horas
 
 // Cada reserva ocupa el rango [start, end) en horas 24h.
 // start/end pueden llegar hasta 26 (= 2 AM del día siguiente).
-const BOOKINGS = [
-  // Mayo 2026
-  { date: '2026-05-02', start: 9,  end: 14 },
-  { date: '2026-05-02', start: 18, end: 26 },
-  { date: '2026-05-09', start: 14, end: 22 },
-  { date: '2026-05-10', start: 18, end: 26 },
-  { date: '2026-05-14', start: 18, end: 23 },
-  { date: '2026-05-16', start: 9,  end: 18 },
-  { date: '2026-05-22', start: 18, end: 26 },
-  { date: '2026-05-23', start: 8,  end: 24 },
-  { date: '2026-05-24', start: 6,  end: 26 },
-  { date: '2026-05-30', start: 18, end: 23 },
+// Se llena dinámicamente desde la vista public_availability de Supabase.
+let BOOKINGS = [];
 
-  // Junio 2026
-  { date: '2026-06-06', start: 18, end: 26 },
-  { date: '2026-06-13', start: 9,  end: 25 },
-  { date: '2026-06-20', start: 14, end: 21 },
-  { date: '2026-06-27', start: 12, end: 26 },
-
-  // Julio 2026
-  { date: '2026-07-04', start: 6,  end: 26 },
-  { date: '2026-07-11', start: 9,  end: 14 },
-  { date: '2026-07-18', start: 14, end: 22 },
-  { date: '2026-07-25', start: 18, end: 26 },
-];
+// Lee la ocupación pública (sin datos del cliente) desde Supabase.
+// La vista public_availability solo expone fecha y horas.
+async function loadBookings() {
+  const cfg = window.SUPABASE_CONFIG;
+  if (!cfg || !cfg.url || cfg.url.includes('YOUR-PROJECT-REF')) {
+    console.warn('Supabase no configurado: el calendario se muestra vacío.');
+    return;
+  }
+  try {
+    const res = await fetch(
+      cfg.url + '/rest/v1/public_availability?select=event_date,start_hour,end_hour,all_day',
+      {
+        headers: {
+          apikey: cfg.anonKey,
+          Authorization: 'Bearer ' + cfg.anonKey,
+        },
+      }
+    );
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const rows = await res.json();
+    BOOKINGS = rows.map((r) => ({
+      date: r.event_date,
+      start: r.all_day ? DAY_START : r.start_hour,
+      end: r.all_day ? DAY_END : r.end_hour,
+    }));
+  } catch (e) {
+    console.error('No se pudo cargar la disponibilidad:', e);
+    BOOKINGS = [];
+  }
+}
 
 const MONTHS_ES = [
   'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
@@ -290,11 +298,13 @@ function initBack() {
   if (back) back.addEventListener('click', showMonthView);
 }
 
-function init() {
+async function init() {
   buildFilters();
   buildCalendar();
   initBack();
   initMobileMenu();
+  await loadBookings();
+  buildCalendar();
 }
 
 if (document.readyState === 'loading') {

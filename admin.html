@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Panel Admin — Hacienda Lucina</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Jost:wght@200;300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body class="admin-body">
+
+  <header class="admin-header">
+    <a class="admin-brand" href="index.html">
+      <span class="admin-brand-kicker">L G L</span>
+      <span class="admin-brand-name">Hacienda Lucina</span>
+    </a>
+    <div class="admin-header-right">
+      <span class="admin-user" id="adminUser" hidden></span>
+      <button class="admin-logout" id="logoutBtn" type="button" hidden>Cerrar sesión</button>
+    </div>
+  </header>
+
+  <main class="admin-main">
+
+    <!-- ── LOGIN ── -->
+    <section class="admin-auth" id="authView">
+      <div class="admin-card auth-card">
+        <div class="sec-label">Panel privado</div>
+        <h1 class="auth-title">Acceso administradores</h1>
+        <div class="sec-rule"></div>
+
+        <!-- paso 1: telefono -->
+        <form class="auth-form" id="phoneForm">
+          <label class="field-label" for="phoneInput">Teléfono</label>
+          <input id="phoneInput" type="tel" inputmode="tel" placeholder="+52 871 283 2271" autocomplete="tel" required>
+          <p class="auth-hint">Recibirás un código por WhatsApp.</p>
+          <button class="admin-btn" id="phoneBtn" type="submit">Enviar código</button>
+        </form>
+
+        <!-- paso 2: OTP -->
+        <form class="auth-form" id="otpForm" hidden>
+          <label class="field-label" for="otpInput">Código de verificación</label>
+          <input id="otpInput" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="8" placeholder="000000" autocomplete="one-time-code" required>
+          <p class="auth-hint" id="otpHint"></p>
+          <button class="admin-btn" id="otpBtn" type="submit">Entrar</button>
+          <button class="admin-link" id="otpBack" type="button">Cambiar número</button>
+        </form>
+
+        <p class="auth-msg" id="authMsg" role="alert" hidden></p>
+      </div>
+    </section>
+
+    <!-- ── DASHBOARD ── -->
+    <section class="admin-dash" id="dashView" hidden>
+
+      <div class="admin-grid">
+        <!-- crear evento -->
+        <div class="admin-card">
+          <h2 class="card-title">Nuevo evento</h2>
+          <div class="sec-rule"></div>
+          <form class="event-form" id="eventForm">
+            <div class="field">
+              <label class="field-label" for="evType">Tipo de evento</label>
+              <select id="evType" required>
+                <option value="" disabled selected>Selecciona</option>
+                <option>Boda</option>
+                <option>XV Años</option>
+                <option>Corporativo</option>
+                <option>Cumpleaños</option>
+                <option>Graduación</option>
+                <option>Evento privado</option>
+                <option>Otro</option>
+              </select>
+            </div>
+
+            <div class="form-row">
+              <div class="field">
+                <label class="field-label" for="evClient">Nombre del cliente</label>
+                <input id="evClient" type="text" placeholder="Nombre">
+              </div>
+              <div class="field">
+                <label class="field-label" for="evPhone">Teléfono del cliente</label>
+                <input id="evPhone" type="tel" placeholder="Opcional">
+              </div>
+            </div>
+
+            <div class="field">
+              <label class="field-label" for="evDate">Fecha</label>
+              <input id="evDate" type="date" required>
+            </div>
+
+            <label class="checkbox-row">
+              <input id="evAllDay" type="checkbox">
+              <span>Todo el día (6:00 a 2:00)</span>
+            </label>
+
+            <div class="form-row" id="hoursRow">
+              <div class="field">
+                <label class="field-label" for="evStart">Hora inicio</label>
+                <select id="evStart"></select>
+              </div>
+              <div class="field">
+                <label class="field-label" for="evEnd">Hora fin</label>
+                <select id="evEnd"></select>
+              </div>
+            </div>
+
+            <div class="field">
+              <label class="field-label" for="evNotes">Notas</label>
+              <textarea id="evNotes" placeholder="Notas internas (opcional)"></textarea>
+            </div>
+
+            <button class="admin-btn" id="eventBtn" type="submit">Crear evento</button>
+            <p class="auth-msg" id="eventMsg" role="alert" hidden></p>
+          </form>
+        </div>
+
+        <!-- lista de eventos -->
+        <div class="admin-card">
+          <h2 class="card-title">Próximos eventos</h2>
+          <div class="sec-rule"></div>
+          <div class="events-list" id="eventsList">
+            <p class="events-empty" id="eventsEmpty" hidden>No hay eventos próximos.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="supabase-config.js"></script>
+  <script type="module" src="admin.js"></script>
+</body>
+</html>
