@@ -16,7 +16,8 @@ lgl_hacienda_v1/
 ├── admin.js              Lógica del panel (auth por OTP, eventos)
 ├── admin.css             Estilos del panel admin
 ├── api/
-│   ├── send-otp-hook.js  Hook "Send SMS" de Supabase → OTP por WhatsApp
+│   ├── auth-request.js   Genera OTP y lo envía por WhatsApp (allowlist)
+│   ├── auth-verify.js    Verifica OTP y emite el JWT de sesión (HS256)
 │   └── notify-event.js   DB Webhook on INSERT → notifica eventos por WhatsApp
 ├── scripts/
 │   └── seed-user.mjs     Pre-crea usuarios admin (auth + profile + allowlist)
@@ -41,9 +42,16 @@ creación dispara una notificación por WhatsApp a todos los usuarios.
 
 ### Arquitectura
 
-- **Supabase Auth** maneja el login por teléfono + OTP. El OTP no se envía por
-  SMS: un *Send SMS Hook* lo redirige a `api/send-otp-hook.js`, que lo manda por
-  WhatsApp con la Cloud API de Meta.
+El login **no usa el servicio de Auth/SMS de Supabase**: es un flujo de OTP
+propio enteramente por WhatsApp.
+
+- **`api/auth-request.js`** valida el teléfono contra la allowlist, genera un
+  OTP de 6 dígitos (guarda solo su hash en `otp_codes`) y lo manda por WhatsApp
+  con la Cloud API de Meta.
+- **`api/auth-verify.js`** valida el código y, si es correcto, emite un **JWT
+  firmado con el JWT Secret del proyecto** (HS256). Es el mismo formato que usa
+  Supabase, así que **RLS funciona sin cambios**. El front guarda ese token en
+  `localStorage` y lo manda como `Authorization` en cada consulta.
 - **Tabla `events`** (protegida con RLS) guarda las reservas. Un *Database
   Webhook on INSERT* llama a `api/notify-event.js`, que notifica a todos.
 - **Vista `public_availability`** es lo único que el público (anon) puede leer.
@@ -60,13 +68,16 @@ Vercel (Project Settings → Environment Variables):
 | `SUPABASE_URL` | scripts, `/api`, `supabase-config.js` | sí |
 | `SUPABASE_ANON_KEY` | `supabase-config.js` | sí |
 | `SUPABASE_SERVICE_ROLE_KEY` | seed, `/api` | **no** |
+| `SUPABASE_JWT_SECRET` | `api/auth-verify.js` | **no** |
 | `META_WHATSAPP_TOKEN` | `/api` | **no** |
 | `META_PHONE_NUMBER_ID` | `/api` | **no** |
-| `META_OTP_TEMPLATE` | `api/send-otp-hook.js` | no |
+| `META_OTP_TEMPLATE` | `api/auth-request.js` | no |
 | `META_EVENT_TEMPLATE` | `api/notify-event.js` | no |
 | `META_TEMPLATE_LANG` | `/api` (default `es_MX`) | no |
-| `SEND_SMS_HOOK_SECRET` | `api/send-otp-hook.js` | **no** |
 | `EVENT_WEBHOOK_SECRET` | `api/notify-event.js` | **no** |
+| `OTP_TTL_SECONDS` | `api/auth-request.js` (default 300) | no |
+| `OTP_RESEND_SECONDS` | `api/auth-request.js` (default 30) | no |
+| `SESSION_TTL_SECONDS` | `api/auth-verify.js` (default 43200) | no |
 
 Además, pon `SUPABASE_URL` y `SUPABASE_ANON_KEY` en `supabase-config.js`
 (son públicas por diseño).
@@ -77,7 +88,8 @@ Además, pon `SUPABASE_URL` y `SUPABASE_ANON_KEY` en `supabase-config.js`
 
 1. Crea un proyecto en [supabase.com](https://supabase.com).
 2. En *SQL Editor*, pega y ejecuta `supabase/schema.sql`.
-3. En *Project Settings → API*, copia `URL`, `anon key` y `service_role key`.
+3. En *Project Settings → API*, copia `URL`, `anon key`, `service_role key` y
+   el **JWT Secret** (*JWT Settings*) → ponlo en `SUPABASE_JWT_SECRET`.
 
 **2. Seed del usuario admin**
 
@@ -87,8 +99,9 @@ npm install
 npm run seed
 ```
 
-Esto crea a Julio (`+528712832271`) en Auth, `profiles` y `allowed_phones`.
-Para agregar más usuarios, edita el array `USERS` en `scripts/seed-user.mjs`.
+Esto crea a Julio (`+528712832271`) en `auth.users` (para tener un `id` estable),
+`profiles` y `allowed_phones`. Para agregar más usuarios, edita el array `USERS`
+en `scripts/seed-user.mjs`. El login en sí **no** usa el Auth de Supabase.
 
 **3. Meta WhatsApp Cloud API**
 
@@ -103,15 +116,11 @@ Para agregar más usuarios, edita el array `USERS` en `scripts/seed-user.mjs`.
      `{{1}}` quién creó, `{{2}}` tipo de evento, `{{3}}` fecha, `{{4}}` horario.
      Pon su nombre en `META_EVENT_TEMPLATE`.
 
-**4. Supabase — Auth, hook y webhook**
+**4. Supabase — Database Webhook (notificación de eventos)**
 
-1. *Authentication → Providers → Phone*: actívalo.
-2. *Authentication → Settings*: **desactiva "Allow new users to sign up"**
-   (solo entran los usuarios sembrados).
-3. *Authentication → Hooks → Send SMS Hook*: actívalo como *HTTPS*, apunta a
-   `https://TU-DOMINIO/api/send-otp-hook` y copia el secreto generado
-   (`v1,whsec_...`) a `SEND_SMS_HOOK_SECRET`.
-4. *Database → Webhooks*: crea uno *on INSERT* en la tabla `events`, tipo
+No hace falta tocar *Authentication* (el login es propio por WhatsApp).
+
+1. *Database → Webhooks*: crea uno *on INSERT* en la tabla `events`, tipo
    *HTTP Request → POST* a `https://TU-DOMINIO/api/notify-event`, y agrega un
    header `x-webhook-secret` con el mismo valor que `EVENT_WEBHOOK_SECRET`.
 

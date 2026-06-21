@@ -54,6 +54,19 @@ create table if not exists public.events (
 create index if not exists events_event_date_idx on public.events (event_date);
 
 -- ----------------------------------------------------------------
+-- Tabla: otp_codes (codigos de un solo uso para login por WhatsApp)
+-- ----------------------------------------------------------------
+-- Solo la accede el service role (las funciones serverless). Guarda el
+-- hash del codigo, nunca el codigo en claro.
+create table if not exists public.otp_codes (
+  phone text primary key,
+  code_hash text not null,
+  expires_at timestamptz not null,
+  attempts int not null default 0,
+  created_at timestamptz not null default now()
+);
+
+-- ----------------------------------------------------------------
 -- Vista publica: solo ocupacion, sin datos del cliente
 -- ----------------------------------------------------------------
 -- security_invoker = off (default): la vista corre con privilegios del
@@ -68,6 +81,7 @@ create or replace view public.public_availability as
 alter table public.events enable row level security;
 alter table public.profiles enable row level security;
 alter table public.allowed_phones enable row level security;
+alter table public.otp_codes enable row level security;
 
 -- events: cualquier usuario autenticado (todos son admins predeterminados)
 drop policy if exists "events_select_auth" on public.events;
@@ -93,6 +107,8 @@ create policy "profiles_select_auth" on public.profiles
 
 -- allowed_phones: sin acceso desde cliente (solo service role lo lee).
 -- No se crean politicas, asi anon/authenticated quedan sin acceso.
+
+-- otp_codes: sin acceso desde cliente (solo service role). Sin politicas.
 
 -- ----------------------------------------------------------------
 -- Grants para la vista publica

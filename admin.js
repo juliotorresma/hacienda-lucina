@@ -1,8 +1,11 @@
 // ============================================================
 // Panel Admin — Hacienda Lucina
 // ============================================================
-// Login por telefono + OTP (Supabase Auth, el OTP llega por WhatsApp
-// gracias al Send SMS Hook). Guard de sesion y CRUD de eventos.
+// Login propio por WhatsApp (sin Supabase Auth):
+//   1. /api/auth-request  -> envia OTP por WhatsApp
+//   2. /api/auth-verify   -> valida OTP y devuelve un JWT (HS256)
+// El JWT se guarda en localStorage y se usa como Authorization en el
+// cliente de Supabase, de modo que el CRUD de eventos respeta RLS.
 // Al crear un evento, el DB Webhook on INSERT dispara la notificacion
 // por WhatsApp a todos los usuarios (no se llama desde el cliente).
 // ============================================================
@@ -10,7 +13,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const cfg = window.SUPABASE_CONFIG || {};
-const supabase = createClient(cfg.url, cfg.anonKey);
+const SESSION_KEY = 'hl_admin_session';
 
 const DAY_START = 6;
 const DAY_END = 26;
@@ -19,6 +22,19 @@ const MONTHS_ES = [
   'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
   'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
 ];
+
+// Cliente actual (anon hasta que haya sesion).
+let supabase = createClient(cfg.url, cfg.anonKey, {
+  auth: { persistSession: false, autoRefreshToken: false },
+});
+let session = null; // { access_token, expires_at, user }
+
+function clientWithToken(token) {
+  return createClient(cfg.url, cfg.anonKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+    global: { headers: { Authorization: `Bearer ${token}` } },
+  });
+}
 
 // ── Helpers de UI ──
 const $ = (id) => document.getElementById(id);
@@ -45,7 +61,6 @@ function setBusy(btn, busy, label) {
 function normalizePhone(raw) {
   const trimmed = String(raw || '').replace(/[\s()-]/g, '');
   if (trimmed.startsWith('+')) return trimmed;
-  // Default Mexico si no traen lada internacional.
   const digits = trimmed.replace(/\D/g, '');
   if (digits.length === 10) return '+52' + digits;
   return '+' + digits;
@@ -63,6 +78,36 @@ function formatDate(dateStr) {
   const [y, m, d] = String(dateStr).split('-').map(Number);
   if (!y || !m || !d) return String(dateStr);
   return `${d} de ${MONTHS_ES[m - 1]} de ${y}`;
+}
+
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+// ── Persistencia de sesion ──
+function loadSession() {
+  try {
+    const raw = localStorage.getItem(SESSION_KEY);
+    if (!raw) return null;
+    const s = JSON.parse(raw);
+    if (!s.access_token || !s.expires_at || s.expires_at < Date.now()) {
+      localStorage.removeItem(SESSION_KEY);
+      return null;
+    }
+    return s;
+  } catch {
+    return null;
+  }
+}
+function saveSession(s) {
+  localStorage.setItem(SESSION_KEY, JSON.stringify(s));
+}
+function clearSession() {
+  localStorage.removeItem(SESSION_KEY);
 }
 
 // ============================================================
@@ -85,6 +130,21 @@ function fillHourSelects() {
   end.value = '26';
 }
 
+async function postJson(url, body) {
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  let data = {};
+  try {
+    data = await res.json();
+  } catch {
+    /* respuesta sin cuerpo */
+  }
+  return { ok: res.ok, status: res.status, data };
+}
+
 $('phoneForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   clearMsg($('authMsg'));
@@ -94,10 +154,10 @@ $('phoneForm').addEventListener('submit', async (e) => {
     return;
   }
   setBusy($('phoneBtn'), true, 'Enviando…');
-  const { error } = await supabase.auth.signInWithOtp({ phone });
+  const { ok, data } = await postJson('/api/auth-request', { phone });
   setBusy($('phoneBtn'), false);
-  if (error) {
-    showMsg($('authMsg'), error.message || 'No se pudo enviar el código.');
+  if (!ok) {
+    showMsg($('authMsg'), data.error || 'No se pudo enviar el código.');
     return;
   }
   pendingPhone = phone;
@@ -117,70 +177,58 @@ $('otpBack').addEventListener('click', () => {
 $('otpForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   clearMsg($('authMsg'));
-  const token = $('otpInput').value.trim();
-  if (!pendingPhone || !token) return;
+  const code = $('otpInput').value.trim();
+  if (!pendingPhone || !code) return;
   setBusy($('otpBtn'), true, 'Verificando…');
-  const { error } = await supabase.auth.verifyOtp({
-    phone: pendingPhone,
-    token,
-    type: 'sms',
-  });
+  const { ok, data } = await postJson('/api/auth-verify', { phone: pendingPhone, code });
   setBusy($('otpBtn'), false);
-  if (error) {
-    showMsg($('authMsg'), error.message || 'Código incorrecto.');
+  if (!ok) {
+    showMsg($('authMsg'), data.error || 'Código incorrecto.');
     return;
   }
-  // onAuthStateChange se encarga de mostrar el dashboard.
-});
-
-$('logoutBtn').addEventListener('click', async () => {
-  await supabase.auth.signOut();
-});
-
-// ============================================================
-// Sesion / guard
-// ============================================================
-let currentProfile = null;
-
-async function loadProfile(user) {
-  const { data } = await supabase
-    .from('profiles')
-    .select('full_name, phone')
-    .eq('id', user.id)
-    .maybeSingle();
-  currentProfile = data || {
-    full_name: user.user_metadata?.full_name || '',
-    phone: user.phone ? '+' + user.phone : '',
+  session = {
+    access_token: data.access_token,
+    expires_at: data.expires_at,
+    user: data.user,
   };
-}
-
-async function renderSession(session) {
-  if (session && session.user) {
-    await loadProfile(session.user);
-    $('authView').hidden = true;
-    $('dashView').hidden = false;
-    $('logoutBtn').hidden = false;
-    const name = currentProfile?.full_name || currentProfile?.phone || 'Admin';
-    $('adminUser').textContent = name;
-    $('adminUser').hidden = false;
-    fillHourSelects();
-    await loadEvents();
-  } else {
-    $('authView').hidden = false;
-    $('dashView').hidden = true;
-    $('logoutBtn').hidden = true;
-    $('adminUser').hidden = true;
-    // reset login
-    $('otpForm').hidden = true;
-    $('phoneForm').hidden = false;
-    $('otpInput').value = '';
-    pendingPhone = null;
-  }
-}
-
-supabase.auth.onAuthStateChange((_event, session) => {
-  renderSession(session);
+  saveSession(session);
+  supabase = clientWithToken(session.access_token);
+  await enterDashboard();
 });
+
+$('logoutBtn').addEventListener('click', () => {
+  clearSession();
+  session = null;
+  supabase = createClient(cfg.url, cfg.anonKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+  showAuth();
+});
+
+// ============================================================
+// Vistas
+// ============================================================
+function showAuth() {
+  $('authView').hidden = false;
+  $('dashView').hidden = true;
+  $('logoutBtn').hidden = true;
+  $('adminUser').hidden = true;
+  $('otpForm').hidden = true;
+  $('phoneForm').hidden = false;
+  $('otpInput').value = '';
+  pendingPhone = null;
+}
+
+async function enterDashboard() {
+  $('authView').hidden = true;
+  $('dashView').hidden = false;
+  $('logoutBtn').hidden = false;
+  const name = session.user?.full_name || session.user?.phone || 'Admin';
+  $('adminUser').textContent = name;
+  $('adminUser').hidden = false;
+  fillHourSelects();
+  await loadEvents();
+}
 
 // ============================================================
 // Eventos (CRUD)
@@ -188,6 +236,18 @@ supabase.auth.onAuthStateChange((_event, session) => {
 $('evAllDay').addEventListener('change', () => {
   $('hoursRow').style.display = $('evAllDay').checked ? 'none' : '';
 });
+
+function handleAuthError(error) {
+  // Token expirado o invalido -> volver al login.
+  if (error && (error.code === 'PGRST301' || /jwt|expired|401/i.test(error.message || ''))) {
+    clearSession();
+    session = null;
+    showAuth();
+    showMsg($('authMsg'), 'Tu sesión expiró. Vuelve a entrar.');
+    return true;
+  }
+  return false;
+}
 
 async function loadEvents() {
   const list = $('eventsList');
@@ -203,6 +263,7 @@ async function loadEvents() {
   list.querySelectorAll('.event-item').forEach((n) => n.remove());
 
   if (error) {
+    if (handleAuthError(error)) return;
     empty.hidden = false;
     empty.textContent = 'No se pudieron cargar los eventos.';
     return;
@@ -242,18 +303,11 @@ async function loadEvents() {
   }
 }
 
-function escapeHtml(str) {
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
-
 async function deleteEvent(id) {
   if (!confirm('¿Eliminar este evento? El horario quedará libre en el calendario.')) return;
   const { error } = await supabase.from('events').delete().eq('id', id);
   if (error) {
+    if (handleAuthError(error)) return;
     alert('No se pudo eliminar: ' + error.message);
     return;
   }
@@ -264,10 +318,9 @@ $('eventForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   clearMsg($('eventMsg'));
 
-  const { data: sess } = await supabase.auth.getUser();
-  const user = sess?.user;
-  if (!user) {
+  if (!session) {
     showMsg($('eventMsg'), 'Sesión expirada. Vuelve a entrar.');
+    showAuth();
     return;
   }
 
@@ -284,8 +337,8 @@ $('eventForm').addEventListener('submit', async (e) => {
   }
 
   const payload = {
-    created_by: user.id,
-    created_by_name: currentProfile?.full_name || '',
+    created_by: session.user.id,
+    created_by_name: session.user.full_name || '',
     event_type: $('evType').value,
     client_name: $('evClient').value.trim(),
     client_phone: $('evPhone').value.trim(),
@@ -301,6 +354,7 @@ $('eventForm').addEventListener('submit', async (e) => {
   setBusy($('eventBtn'), false);
 
   if (error) {
+    if (handleAuthError(error)) return;
     showMsg($('eventMsg'), 'No se pudo crear: ' + error.message);
     return;
   }
@@ -320,6 +374,11 @@ $('eventForm').addEventListener('submit', async (e) => {
     showMsg($('authMsg'), 'Falta configurar Supabase en supabase-config.js.');
     return;
   }
-  const { data } = await supabase.auth.getSession();
-  await renderSession(data.session);
+  session = loadSession();
+  if (session) {
+    supabase = clientWithToken(session.access_token);
+    await enterDashboard();
+  } else {
+    showAuth();
+  }
 })();
