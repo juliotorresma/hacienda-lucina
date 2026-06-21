@@ -18,6 +18,7 @@ lgl_hacienda_v1/
 ├── api/
 │   ├── auth-request.js   Genera OTP y lo envía por WhatsApp (allowlist)
 │   ├── auth-verify.js    Verifica OTP y emite el JWT de sesión (HS256)
+│   ├── contact.js        Formulario público → WhatsApp al dueño
 │   └── notify-event.js   DB Webhook on INSERT → notifica eventos por WhatsApp
 ├── scripts/
 │   └── seed-user.mjs     Pre-crea usuarios admin (auth + profile + allowlist)
@@ -73,7 +74,9 @@ Vercel (Project Settings → Environment Variables):
 | `META_PHONE_NUMBER_ID` | `/api` | **no** |
 | `META_OTP_TEMPLATE` | `api/auth-request.js` | no |
 | `META_EVENT_TEMPLATE` | `api/notify-event.js` | no |
+| `META_CONTACT_TEMPLATE` | `api/contact.js` | no |
 | `META_TEMPLATE_LANG` | `/api` (default `es_MX`) | no |
+| `OWNER_WHATSAPP_PHONE` | `api/contact.js` (default `+528712832271`) | no |
 | `EVENT_WEBHOOK_SECRET` | `api/notify-event.js` | **no** |
 | `OTP_TTL_SECONDS` | `api/auth-request.js` (default 300) | no |
 | `OTP_RESEND_SECONDS` | `api/auth-request.js` (default 30) | no |
@@ -115,6 +118,21 @@ en `scripts/seed-user.mjs`. El login en sí **no** usa el Auth de Supabase.
    - **Utility** para avisar de eventos, con 4 parámetros de cuerpo en orden:
      `{{1}}` quién creó, `{{2}}` tipo de evento, `{{3}}` fecha, `{{4}}` horario.
      Pon su nombre en `META_EVENT_TEMPLATE`.
+   - **Utility** para solicitudes del formulario de contacto, con 6 parámetros:
+     `{{1}}` nombre, `{{2}}` teléfono, `{{3}}` correo, `{{4}}` tipo de evento,
+     `{{5}}` fecha tentativa, `{{6}}` mensaje. Pon su nombre en
+     `META_CONTACT_TEMPLATE`. Ejemplo de cuerpo:
+
+     ```
+     Nueva solicitud de reservacion desde el sitio web.
+
+     Nombre: {{1}}
+     Telefono: {{2}}
+     Correo: {{3}}
+     Tipo de evento: {{4}}
+     Fecha tentativa: {{5}}
+     Mensaje: {{6}}
+     ```
 
 **4. Supabase — Database Webhook (notificación de eventos)**
 

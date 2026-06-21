@@ -238,7 +238,7 @@
     <div class="sec-rule"></div>
     <div class="contact-wrap">
       <p class="contact-text">Cuéntenos sobre su celebración.<br>Con gusto le acompañaremos en cada detalle.</p>
-      <form class="contact-form" onsubmit="event.preventDefault();">
+      <form class="contact-form" id="contactForm">
         <div class="contact-row">
           <div class="field">
             <label class="field-label" for="f-nombre">Nombre completo</label>
@@ -276,6 +276,7 @@
           <textarea id="f-msg" placeholder="Cuéntanos sobre tu evento, número de invitados, etc."></textarea>
         </div>
         <button class="contact-btn" type="submit">Enviar solicitud</button>
+        <p class="contact-msg" id="contactMsg" role="status" hidden></p>
       </form>
     </div>
   </section>

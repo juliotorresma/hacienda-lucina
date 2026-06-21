@@ -300,11 +300,72 @@ function initBack() {
   if (back) back.addEventListener('click', showMonthView);
 }
 
+/* ── Formulario de contacto → notificación por WhatsApp ── */
+function initContactForm() {
+  const form = document.getElementById('contactForm');
+  const msg = document.getElementById('contactMsg');
+  if (!form) return;
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = form.querySelector('.contact-btn');
+
+    const payload = {
+      name: document.getElementById('f-nombre')?.value.trim() || '',
+      phone: document.getElementById('f-tel')?.value.trim() || '',
+      email: document.getElementById('f-mail')?.value.trim() || '',
+      eventType: document.getElementById('f-evento')?.value || '',
+      date: document.getElementById('f-fecha')?.value || '',
+      message: document.getElementById('f-msg')?.value.trim() || '',
+    };
+
+    if (msg) {
+      msg.hidden = true;
+      msg.className = 'contact-msg';
+    }
+    const prevLabel = btn ? btn.textContent : '';
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = 'Enviando…';
+    }
+
+    try {
+      const res = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'No se pudo enviar');
+
+      form.reset();
+      if (msg) {
+        msg.textContent = 'Gracias. Hemos recibido tu solicitud y te contactaremos pronto.';
+        msg.className = 'contact-msg success';
+        msg.hidden = false;
+      }
+    } catch (err) {
+      if (msg) {
+        msg.textContent =
+          'No se pudo enviar la solicitud. Intenta de nuevo o escríbenos por WhatsApp.';
+        msg.className = 'contact-msg error';
+        msg.hidden = false;
+      }
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = prevLabel;
+      }
+    }
+  });
+}
+
 async function init() {
   buildFilters();
   buildCalendar();
   initBack();
   initMobileMenu();
+  initContactForm();
   await loadBookings();
   buildCalendar();
 }

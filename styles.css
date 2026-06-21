@@ -967,6 +967,31 @@ section { padding: 72px 48px; }
   border-color: var(--terra-soft);
   transform: translateY(-1px);
 }
+.contact-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+  transform: none;
+}
+.contact-msg {
+  margin-top: 14px;
+  font-size: 14px;
+  line-height: 1.5;
+  padding: 12px 14px;
+  border-radius: 0;
+}
+.contact-msg.success {
+  background: rgba(107, 117, 72, 0.16);
+  color: var(--sage-dk);
+  border: 0.5px solid var(--sage-dk);
+}
+.contact-msg.error {
+  background: rgba(179, 89, 46, 0.12);
+  color: var(--terra-dk);
+  border: 0.5px solid var(--terra-dk);
+}
+.contact-msg[hidden] {
+  display: none;
+}
 
 /* ── FOOTER ── */
 footer {
