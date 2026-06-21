@@ -28,6 +28,7 @@ if (!SUPABASE_URL || !SERVICE_KEY) {
 // Telefono en formato E.164 (con +). Mexico: +52 + 10 digitos.
 const USERS = [
   { phone: '+528712832271', full_name: 'Julio' },
+  { phone: '+528712778976', full_name: 'David' },
 ];
 
 const admin = createClient(SUPABASE_URL, SERVICE_KEY, {
