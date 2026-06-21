@@ -888,6 +888,7 @@ section { padding: 72px 48px; }
   display: flex;
   flex-direction: column;
   gap: 8px;
+  min-width: 0;
 }
 .field-label {
   font-family: 'Jost', sans-serif;
@@ -901,6 +902,8 @@ section { padding: 72px 48px; }
 .contact-form select,
 .contact-form textarea {
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
   background: rgba(243, 234, 219, 0.05);
   border: 0.5px solid rgba(243, 234, 219, 0.22);
   padding: 13px 16px;
