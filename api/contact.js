@@ -10,6 +10,10 @@
 //   {{1}} nombre  {{2}} telefono  {{3}} correo
 //   {{4}} tipo de evento  {{5}} fecha tentativa  {{6}} mensaje
 //
+// El mismo mensaje se envia al dueno y a la persona que lleno el
+// formulario (como confirmacion). El envio al dueno es obligatorio; el
+// del solicitante es best-effort (no rompe la respuesta si falla).
+//
 // Variables de entorno requeridas:
 //   META_WHATSAPP_TOKEN
 //   META_PHONE_NUMBER_ID
@@ -33,6 +37,15 @@ function readJson(req) {
     });
     req.on('error', reject);
   });
+}
+
+function normalizePhone(raw) {
+  const trimmed = String(raw || '').replace(/[\s()-]/g, '');
+  if (trimmed.startsWith('+')) return trimmed;
+  const digits = trimmed.replace(/\D/g, '');
+  if (digits.length === 10) return '+52' + digits;
+  if (!digits) return '';
+  return '+' + digits;
 }
 
 // WhatsApp no permite saltos de linea, tabs ni 5+ espacios seguidos en
@@ -75,38 +88,52 @@ export default async function handler(req, res) {
   ];
 
   const lang = process.env.META_TEMPLATE_LANG || 'es_MX';
-  const owner = (process.env.OWNER_WHATSAPP_PHONE || '+528712832271').replace('+', '');
   const url = `https://graph.facebook.com/v21.0/${process.env.META_PHONE_NUMBER_ID}/messages`;
 
-  const payload = {
-    messaging_product: 'whatsapp',
-    to: owner,
-    type: 'template',
-    template: {
-      name: process.env.META_CONTACT_TEMPLATE,
-      language: { code: lang },
-      components: [
-        { type: 'body', parameters: params.map((text) => ({ type: 'text', text })) },
-      ],
-    },
-  };
-
-  try {
+  async function sendTemplate(toPhone) {
+    const to = String(toPhone).replace('+', '');
     const r = await fetch(url, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${process.env.META_WHATSAPP_TOKEN}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(payload),
+      body: JSON.stringify({
+        messaging_product: 'whatsapp',
+        to,
+        type: 'template',
+        template: {
+          name: process.env.META_CONTACT_TEMPLATE,
+          language: { code: lang },
+          components: [
+            { type: 'body', parameters: params.map((text) => ({ type: 'text', text })) },
+          ],
+        },
+      }),
     });
-    if (!r.ok) {
-      const txt = await r.text();
-      return res.status(502).json({ error: `WhatsApp: ${txt}` });
-    }
-  } catch (e) {
-    return res.status(502).json({ error: `WhatsApp: ${e.message}` });
+    if (!r.ok) throw new Error(await r.text());
   }
 
-  return res.status(200).json({ ok: true });
+  const owner = process.env.OWNER_WHATSAPP_PHONE || '+528712832271';
+
+  // 1. Notificacion al dueno (obligatoria).
+  try {
+    await sendTemplate(owner);
+  } catch (e) {
+    return res.status(502).json({ error: `WhatsApp (dueño): ${e.message}` });
+  }
+
+  // 2. Confirmacion a la persona que lleno el formulario (best-effort).
+  let confirmationSent = false;
+  const requesterPhone = normalizePhone(body.phone);
+  if (requesterPhone && requesterPhone.replace('+', '') !== owner.replace('+', '')) {
+    try {
+      await sendTemplate(requesterPhone);
+      confirmationSent = true;
+    } catch (e) {
+      console.error('No se pudo enviar confirmacion al solicitante:', e.message);
+    }
+  }
+
+  return res.status(200).json({ ok: true, confirmation_sent: confirmationSent });
 }
