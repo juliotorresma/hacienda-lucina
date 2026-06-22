@@ -117,3 +117,56 @@ grant select on public.public_availability to anon, authenticated;
 
 -- Nota: events / profiles / allowed_phones NO se otorgan a anon.
 -- El service role (usado por las funciones serverless) ignora RLS.
+
+-- ================================================================
+-- Imagenes editables del sitio (hero, tira inferior y galeria)
+-- ================================================================
+-- Guarda la URL publica de cada slot de imagen. El sitio publico lee
+-- estas URLs; el admin las actualiza subiendo archivos al Storage.
+create table if not exists public.site_images (
+  key text primary key,
+  url text not null,
+  updated_at timestamptz not null default now()
+);
+
+alter table public.site_images enable row level security;
+
+drop policy if exists "site_images_select" on public.site_images;
+create policy "site_images_select" on public.site_images
+  for select to anon, authenticated using (true);
+
+drop policy if exists "site_images_insert" on public.site_images;
+create policy "site_images_insert" on public.site_images
+  for insert to authenticated with check (true);
+
+drop policy if exists "site_images_update" on public.site_images;
+create policy "site_images_update" on public.site_images
+  for update to authenticated using (true) with check (true);
+
+grant select on public.site_images to anon, authenticated;
+grant insert, update on public.site_images to authenticated;
+
+-- ----------------------------------------------------------------
+-- Storage: bucket publico para las imagenes del sitio
+-- ----------------------------------------------------------------
+insert into storage.buckets (id, name, public)
+values ('site-images', 'site-images', true)
+on conflict (id) do nothing;
+
+-- Lectura publica (ademas el bucket es public).
+drop policy if exists "site_images_storage_read" on storage.objects;
+create policy "site_images_storage_read" on storage.objects
+  for select to anon, authenticated using (bucket_id = 'site-images');
+
+-- Subida / reemplazo / borrado solo para usuarios autenticados.
+drop policy if exists "site_images_storage_insert" on storage.objects;
+create policy "site_images_storage_insert" on storage.objects
+  for insert to authenticated with check (bucket_id = 'site-images');
+
+drop policy if exists "site_images_storage_update" on storage.objects;
+create policy "site_images_storage_update" on storage.objects
+  for update to authenticated using (bucket_id = 'site-images') with check (bucket_id = 'site-images');
+
+drop policy if exists "site_images_storage_delete" on storage.objects;
+create policy "site_images_storage_delete" on storage.objects
+  for delete to authenticated using (bucket_id = 'site-images');

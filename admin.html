@@ -62,9 +62,10 @@
       <div class="admin-grid">
         <!-- crear evento -->
         <div class="admin-card">
-          <h2 class="card-title">Nuevo evento</h2>
+          <h2 class="card-title" id="eventFormTitle">Nuevo evento</h2>
           <div class="sec-rule"></div>
           <form class="event-form" id="eventForm">
+            <input type="hidden" id="evId">
             <div class="field">
               <label class="field-label" for="evType">Tipo de evento</label>
               <select id="evType" required>
@@ -116,7 +117,10 @@
               <textarea id="evNotes" placeholder="Notas internas (opcional)"></textarea>
             </div>
 
-            <button class="admin-btn" id="eventBtn" type="submit">Crear evento</button>
+            <div class="event-actions">
+              <button class="admin-btn" id="eventBtn" type="submit">Crear evento</button>
+              <button class="admin-link" id="eventCancel" type="button" hidden>Cancelar edición</button>
+            </div>
             <p class="auth-msg" id="eventMsg" role="alert" hidden></p>
           </form>
         </div>
@@ -129,6 +133,25 @@
             <p class="events-empty" id="eventsEmpty" hidden>No hay eventos próximos.</p>
           </div>
         </div>
+      </div>
+
+      <!-- imágenes del sitio -->
+      <div class="admin-card images-card">
+        <h2 class="card-title">Imágenes del sitio</h2>
+        <div class="sec-rule"></div>
+        <p class="images-help">
+          Cambia las fotos del sitio público. Sube una imagen (JPG o PNG, máx. 5&nbsp;MB)
+          y se actualizará al instante. Para mejor calidad usa fotos horizontales y nítidas.
+        </p>
+
+        <h3 class="images-group-title">Portada (Hero)</h3>
+        <div class="images-grid" data-group="hero"></div>
+
+        <h3 class="images-group-title">Tira bajo la portada</h3>
+        <div class="images-grid" data-group="strip"></div>
+
+        <h3 class="images-group-title">Galería</h3>
+        <div class="images-grid" data-group="gallery"></div>
       </div>
     </section>
   </main>

@@ -300,6 +300,28 @@ function initBack() {
   if (back) back.addEventListener('click', showMonthView);
 }
 
+/* ── Imágenes editables del sitio (desde Supabase) ── */
+async function loadSiteImages() {
+  const cfg = window.SUPABASE_CONFIG;
+  if (!cfg || !cfg.url || cfg.url.includes('YOUR-PROJECT-REF')) return;
+  try {
+    const res = await fetch(
+      cfg.url + '/rest/v1/site_images?select=key,url',
+      { headers: { apikey: cfg.anonKey, Authorization: 'Bearer ' + cfg.anonKey } }
+    );
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const rows = await res.json();
+    for (const row of rows) {
+      if (!row.url) continue;
+      document
+        .querySelectorAll('[data-img-key="' + row.key + '"]')
+        .forEach((img) => { img.src = row.url; });
+    }
+  } catch (e) {
+    console.error('No se pudieron cargar las imágenes del sitio:', e);
+  }
+}
+
 /* ── Formulario de contacto → notificación por WhatsApp ── */
 function initContactForm() {
   const form = document.getElementById('contactForm');
@@ -366,6 +388,7 @@ async function init() {
   initBack();
   initMobileMenu();
   initContactForm();
+  loadSiteImages();
   await loadBookings();
   buildCalendar();
 }

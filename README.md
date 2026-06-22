@@ -90,9 +90,17 @@ Además, pon `SUPABASE_URL` y `SUPABASE_ANON_KEY` en `supabase-config.js`
 **1. Supabase — base de datos**
 
 1. Crea un proyecto en [supabase.com](https://supabase.com).
-2. En *SQL Editor*, pega y ejecuta `supabase/schema.sql`.
+2. En *SQL Editor*, pega y ejecuta `supabase/schema.sql`. El script es idempotente:
+   si agregas funciones nuevas (p. ej. la tabla `site_images` y el bucket
+   `site-images` para las imágenes editables del sitio), vuelve a ejecutarlo
+   completo y solo creará lo que falte.
 3. En *Project Settings → API*, copia `URL`, `anon key`, `service_role key` y
    el **JWT Secret** (*JWT Settings*) → ponlo en `SUPABASE_JWT_SECRET`.
+
+> **Imágenes del sitio:** el `schema.sql` crea un bucket público `site-images`
+> en Storage y sus políticas. Desde el panel admin (sección *Imágenes del sitio*)
+> puedes reemplazar la portada, la tira inferior y la galería; las fotos se
+> suben a ese bucket y el sitio público las lee de la tabla `site_images`.
 
 **2. Seed del usuario admin**
 
