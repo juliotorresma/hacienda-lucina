@@ -29,6 +29,7 @@ if (!SUPABASE_URL || !SERVICE_KEY) {
 const USERS = [
   { phone: '+528712832271', full_name: 'Julio' },
   { phone: '+528712778976', full_name: 'David' },
+  { phone: '+528716133342', full_name: 'Sofía' },
 ];
 
 const admin = createClient(SUPABASE_URL, SERVICE_KEY, {
